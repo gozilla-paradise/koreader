@@ -1,0 +1,22 @@
+describe("Thai segmentation Lua bindings", function()
+    local cre
+    setup(function()
+        require("commonrequire")
+        cre = require("document/credocument"):engineInit()
+    end)
+
+    it("exposes the new binding functions", function()
+        assert.is_function(cre.setThaiSegmentationEnabled)
+        assert.is_function(cre.reloadThaiDictionary)
+        assert.is_function(cre.addThaiWord)
+        assert.is_function(cre.configureThaiSegmenter)
+    end)
+
+    it("accepts enable/disable without error", function()
+        assert.has_no.errors(function()
+            cre.setThaiSegmentationEnabled(true)
+            cre.setThaiSegmentationEnabled(false)
+            cre.setThaiSegmentationEnabled(true)
+        end)
+    end)
+end)
