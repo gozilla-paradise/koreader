@@ -114,6 +114,41 @@ function CreDocument:engineInit()
         -- initialize cache
         CreDocument.cacheInit()
 
+        -- initialize Thai segmenter paths (defensive: missing stock trie is not fatal)
+        do
+            -- Stock trie ships in the bundle alongside other data (fonts,
+            -- hyph dicts, etc.). Use a relative path — it resolves against
+            -- CWD on desktop (project root) and against filesDir on Android
+            -- (where the APK's assets extract). DataStorage:getDataDir()
+            -- would point at external storage on Android, which is wrong.
+            local stock_path  = "data/thai/thbrk.tri"
+            local user_path   = DataStorage:getSettingsDir() .. "/thai_user_words.txt"
+            local cache_path  = DataStorage:getDataDir() .. "/cache/cr3cache/thai_combined_v1.tri"
+            -- Ensure cache dir exists (cr3cache is already created by cacheInit above)
+            local cache_dir = DataStorage:getDataDir() .. "/cache/cr3cache"
+            if lfs.attributes(cache_dir, "mode") ~= "directory" then
+                lfs.mkdir(cache_dir)
+            end
+            -- Create empty user words file on first run
+            if lfs.attributes(user_path, "mode") ~= "file" then
+                local f = io.open(user_path, "w")
+                if f then
+                    f:write("# Thai user dictionary — one word per line, UTF-8. Lines starting with '#' are comments.\n")
+                    f:close()
+                end
+            end
+            -- Only configure when the stock trie exists; if missing, segmenter stays unconfigured
+            if lfs.attributes(stock_path, "mode") == "file" then
+                local ok, err = pcall(cre.configureThaiSegmenter, stock_path, user_path, cache_path)
+                if not ok then
+                    logger.warn("Thai segmenter configure failed:", err)
+                end
+            else
+                logger.info("Thai stock trie not found at", stock_path, "— Thai segmentation disabled")
+            end
+            cre.setThaiSegmentationEnabled(G_reader_settings:nilOrTrue("thai_segmentation_enabled"))
+        end
+
         -- initialize hyph dictionaries
         cre.initHyphDict("./data/hyph/")
 

@@ -563,6 +563,34 @@ These settings will apply to all books with any hyphenation dictionary.
         hold_callback = function() self:makeDefaultFloatingPunctuation() end,
     })
 
+    table.insert(self.menu_table, {
+        text = _("Thai word segmentation"),
+        help_text = _("Break lines and select words inside Thai text using a dictionary. Turn off to fall back to no-break behavior."),
+        checked_func = function()
+            return G_reader_settings:nilOrTrue("thai_segmentation_enabled")
+        end,
+        callback = function()
+            local enabled = not G_reader_settings:nilOrTrue("thai_segmentation_enabled")
+            G_reader_settings:saveSetting("thai_segmentation_enabled", enabled)
+            local cre = require("document/credocument"):engineInit()
+            if cre and cre.setThaiSegmentationEnabled then
+                cre.setThaiSegmentationEnabled(enabled)
+            end
+            UIManager:setDirty("all", "partial")
+        end,
+    })
+    table.insert(self.menu_table, {
+        text = _("Reload Thai dictionary"),
+        help_text = _("Re-read the user words file and re-segment the current page."),
+        callback = function()
+            local cre = require("document/credocument"):engineInit()
+            if cre and cre.reloadThaiDictionary then
+                cre.reloadThaiDictionary()
+                UIManager:setDirty("all", "partial")
+            end
+        end,
+    })
+
     self.ui.menu:registerToMainMenu(self)
 end
 

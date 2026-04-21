@@ -257,6 +257,36 @@ function ReaderHighlight:init()
         }
     end)
 
+    -- Thai user dictionary
+    self:addToHighlightDialog("13_add_thai_word", function(this)
+        return {
+            text = _("Add to Thai dictionary"),
+            show_in_highlight_dialog_func = function()
+                local sel = this.selected_text and this.selected_text.text
+                if not sel or sel == "" then return false end
+                for _, c in utf8.codes(sel) do
+                    if c >= 0x0E00 and c <= 0x0E7F then return true end
+                end
+                return false
+            end,
+            callback = function()
+                local sel = this.selected_text and this.selected_text.text
+                if not sel or sel == "" then return end
+                local cre = require("document/credocument"):engineInit()
+                if cre and cre.addThaiWord then
+                    local ok = cre.addThaiWord(sel)
+                    if ok then
+                        UIManager:show(InfoMessage:new{ text = _("Word added to Thai dictionary.") })
+                        UIManager:setDirty("all", "partial")
+                    else
+                        UIManager:show(InfoMessage:new{ text = _("Failed to add word.") })
+                    end
+                end
+                this:onClose()
+            end,
+        }
+    end)
+
     self.ui:registerPostInitCallback(function()
         self.ui.menu:registerToMainMenu(self)
     end)
